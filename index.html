@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Pandhal | Samosa Interactive</title>
+
+  <link rel="manifest" href="TemplateData/manifest.json">
+
+  <!-- Apple-specific -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Pandhal">
+  <link rel="apple-touch-icon" href="TemplateData/favicon.png">
+
+  <link rel="icon" type="image/x-icon" href="TemplateData/favicon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cal+Sans&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-gradient: radial-gradient(circle at 50% 0%, #1a241c 0%, #080a08 100%);
+      --surface: rgba(18, 23, 18, 0.65);
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --accent: #00ff88;
+      --accent-glow: rgba(0, 255, 136, 0.2);
+      --text-main: #f0fdf4;
+      --text-muted: #86a38f;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      height: 100dvh; 
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    header {
+      padding: 16px 24px;
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--surface-border);
+      z-index: 10;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      font-family: "Cal Sans", sans-serif;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    #unity-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      padding: 20px;
+    }
+
+    /* --- FULLSCREEN OVERRIDES --- */
+    /* Forces the container to black out the background */
+    #unity-container:fullscreen { padding: 0; background: #000; width: 100vw; height: 100vh; }
+    #unity-container:-webkit-full-screen { padding: 0; background: #000; width: 100vw; height: 100vh; }
+
+    /* Forces the canvas to drop its constraints and fill the screen */
+    #unity-container:fullscreen #unity-canvas,
+    #unity-container:-webkit-full-screen #unity-canvas {
+      max-width: none !important;
+      max-height: none !important;
+      width: 100% !important;
+      height: 100% !important;
+      border-radius: 0 !important;
+      border: none !important;
+    }
+
+    #unity-canvas {
+      width: 100%;
+      height: 100%;
+      max-width: 100vh;
+      max-height: 60vh;
+      /* max-width: 640px;
+      max-height: 480px; */
+      object-fit: contain; 
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 0 1px var(--surface-border);
+      background: #000;
+    }
+
+    /* Fixed Exit Fullscreen Button */
+    #exit-fullscreen-btn {
+      display: none; /* Hidden by default */
+      position: absolute;
+      height: 48px;
+      width: 48px;
+      top: 20px;
+      right: 20px;
+      align-items: center;
+      justify-content: center;
+      z-index: 2147483647; /* Maximum possible z-index to beat browser fullscreen layers */
+      background: rgba(0, 0, 0, 0.8);
+      border: 1px solid var(--accent);
+      border-radius: 50%;
+      color: var(--accent);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    #exit-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    #fullscreen-btn {
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid rgba(0, 255, 136, 0.4);
+      color: var(--accent);
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 48px;
+      width: 48px;
+    }
+
+    .btn-icon {
+      width: 24px;
+      height: 24px;
+      /* Ensures the image transition matches the button background transition */
+      transition: filter 0.2s ease; 
+    }
+
+    #fullscreen-btn:hover {
+      background: var(--accent);
+      color: #000;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    #fullscreen-btn:hover .btn-icon {
+      /* This turns a white/light icon into a black/dark icon */
+      filter: invert(1); 
+    }
+
+    #loading {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--surface-border);
+      padding: 30px 40px;
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      z-index: 20;
+    }
+
+    #loading-text {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .bar {
+      width: 200px;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      border-radius: 8px;
+      box-shadow: 0 0 10px var(--accent-glow);
+      transition: width 0.1s ease-out;
+    }
+
+    footer {
+      padding: 12px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid var(--surface-border);
+    }
+
+    footer a {
+      color: var(--text-main);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    footer a:hover {
+      color: var(--accent);
+    }
+
+    /* Rotate Device Overlay */
+    #rotate-overlay {
+      display: none; 
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100dvh;
+      background: var(--bg-gradient);
+      z-index: 9999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .phone-icon {
+      width: 50px;
+      height: 80px;
+      border: 4px solid var(--accent);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      position: relative;
+      animation: rotate-anim 2s infinite ease-in-out;
+    }
+
+    .phone-icon::after {
+      content: '';
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 12px;
+      height: 4px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    #rotate-overlay h2 { font-size: 1.2rem; margin-bottom: 8px; }
+    #rotate-overlay p { color: var(--text-muted); font-size: 0.9rem; }
+
+    @keyframes rotate-anim {
+      0% { transform: rotate(0deg); }
+      50% { transform: rotate(-90deg); }
+      100% { transform: rotate(-90deg); }
+    }
+
+    @media (max-width: 768px) {
+      #unity-container { padding: 0; }
+      #unity-canvas { border-radius: 0; border: none; }
+      header { padding: 12px 16px; }
+    }
+
+    #start-btn {
+      margin-top: 24px;
+      padding: 12px 32px;
+      background: rgba(0,255,136,0.15);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 50px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: all 0.2s ease;
+    }
+    #start-btn:hover { background: var(--accent); color: #000; }
+  </style>
+</head>
+
+<body>
+
+<div id="rotate-overlay">
+  <div class="phone-icon"></div>
+  <h2>Rotate Device</h2>
+  <p>Please rotate your device to landscape for the best experience.</p>
+  <button id="start-btn">Start</button>
+</div>
+
+<header>
+  <h1>Pandhal</h1>
+  <button id="fullscreen-btn">
+    <img src="TemplateData/expand.png" alt="" class="btn-icon">
+  </button>
+</header>
+
+<div id="unity-container">
+  <canvas id="unity-canvas"></canvas>
+  
+  <button id="exit-fullscreen-btn">
+    <img id="exit-icon" src="TemplateData/compress.png" alt="">
+  </button>
+
+  <div id="loading">
+    <div id="loading-text">Loading Assets...</div>
+    <div class="bar">
+      <div class="bar-fill" id="progress-bar"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Built by <a href="https://www.samosainteractive.com" target="_blank">Samosa Interactive</a>
+</footer>
+
+<script>
+  const canvas = document.getElementById("unity-canvas");
+  const unityContainer = document.getElementById("unity-container");
+  const progressBar = document.getElementById("progress-bar");
+  const fullscreenBtn = document.getElementById("fullscreen-btn");
+  const exitFullscreenBtn = document.getElementById("exit-fullscreen-btn");
+  const loadingElement = document.getElementById("loading");
+  const rotateOverlay = document.getElementById("rotate-overlay");
+  const startBtn = document.getElementById("start-btn");
+
+  let unityInstance = null;
+
+  const buildUrl = "Build";
+  const loaderUrl = buildUrl + "/WebGL.loader.js";
+
+  const config = {
+    dataUrl: buildUrl + "/WebGL.data.unityweb",
+    frameworkUrl: buildUrl + "/WebGL.framework.js.unityweb",
+    codeUrl: buildUrl + "/WebGL.wasm.unityweb",
+    streamingAssetsUrl: "StreamingAssets",
+    companyName: "Samosa Interactive",
+    productName: "Pandhal",
+    productVersion: "0.1.0",
+    matchWebGLToCanvasSize: true,
+  };
+
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    config.devicePixelRatio = Math.min(window.devicePixelRatio, 2);
+  }
+
+  const script = document.createElement("script");
+  script.src = loaderUrl;
+
+  script.onload = () => {
+    createUnityInstance(canvas, config, (progress) => {
+      progressBar.style.width = (progress * 100) + "%";
+    }).then((instance) => {
+      unityInstance = instance;
+
+      loadingElement.style.transition = "opacity 0.4s ease";
+      loadingElement.style.opacity = "0";
+      setTimeout(() => loadingElement.style.display = "none", 400);
+
+    }).catch((err) => alert(err));
+  };
+
+  document.body.appendChild(script);
+
+  // --- FULLSCREEN BUTTON (desktop) ---
+  fullscreenBtn.onclick = () => {
+    if (unityContainer.requestFullscreen) {
+      unityContainer.requestFullscreen();
+    } else if (unityContainer.webkitRequestFullscreen) {
+      unityContainer.webkitRequestFullscreen();
+    } else if (unityInstance) {
+      unityInstance.SetFullscreen(1);
+    }
+  };
+
+  exitFullscreenBtn.onclick = () => {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+  };
+
+  // --- OVERLAY HELPERS ---
+  function showOverlay() {
+    rotateOverlay.style.display = "flex";
+  }
+
+  function hideOverlay() {
+    rotateOverlay.style.display = "none";
+  }
+
+  // --- MOBILE PORTRAIT DETECTION ---
+  if (isMobile) {
+    const portraitMQ = window.matchMedia("(orientation: portrait)");
+
+    const onOrientationChange = (e) => {
+      // Only react to orientation changes when NOT in fullscreen
+      if (!(document.fullscreenElement || document.webkitFullscreenElement)) {
+        if (e.matches) {
+          showOverlay();
+        } else {
+          hideOverlay();
+        }
+      }
+    };
+
+    portraitMQ.addEventListener("change", onOrientationChange);
+
+    // Initial check on load
+    if (portraitMQ.matches) showOverlay();
+  }
+
+  // --- START BUTTON ---
+  startBtn.onclick = async () => {
+    try {
+      if (unityContainer.requestFullscreen) {
+        await unityContainer.requestFullscreen();
+      } else if (unityContainer.webkitRequestFullscreen) {
+        unityContainer.webkitRequestFullscreen();
+      }
+    } catch (e) {
+      console.warn("Fullscreen request failed:", e);
+    }
+
+    try {
+      if (screen.orientation && screen.orientation.lock) {
+        await screen.orientation.lock("landscape");
+      }
+    } catch (e) {
+      console.warn("Orientation lock failed:", e);
+    }
+
+    hideOverlay();
+  };
+
+  // --- FULLSCREEN CHANGE HANDLER ---
+  const handleFullscreenChange = () => {
+    const isFs = document.fullscreenElement || document.webkitFullscreenElement;
+
+    exitFullscreenBtn.style.display = isFs ? "flex" : "none";
+
+    if (!isFs && isMobile) {
+      // Unlock orientation and restore overlay if back in portrait
+      if (screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+      }
+      if (window.matchMedia("(orientation: portrait)").matches) {
+        showOverlay();
+      }
+    }
+  };
+
+  document.addEventListener("fullscreenchange", handleFullscreenChange);
+  document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+
+  // --- PWA MODE ---
+  const isPWA = window.navigator.standalone === true;
+
+  if (isPWA) {
+    fullscreenBtn.style.display = "none";
+    unityContainer.style.padding = "0";
+    canvas.style.cssText = "width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;border-radius:0!important;border:none!important;";
+    document.querySelector("header").style.display = "none";
+    document.querySelector("footer").style.display = "none";
+  }
+</script>
+
+</body>
+</html>
