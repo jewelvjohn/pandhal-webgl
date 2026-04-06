@@ -69,6 +69,8 @@
     #unity-container {
       flex: 1;
       display: flex;
+      flex-direction: column;
+      gap: 16px;
       justify-content: center;
       align-items: center;
       position: relative;
@@ -235,10 +237,7 @@
     /* Rotate Device Overlay */
     #rotate-overlay {
       display: none; 
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100dvh;
-      background: var(--bg-gradient);
-      z-index: 30;
+      background: none;
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -279,11 +278,15 @@
 
     @media (max-width: 768px) {
       #unity-container { padding: 0; }
-      #unity-canvas { border-radius: 0; border: none; }
+      #unity-canvas { max-width: 90vw; max-height: 54vw; }
       header { padding: 12px 16px; }
     }
 
-    #start-btn {
+    #expand-btn {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
       margin-top: 24px;
       padding: 12px 32px;
       background: rgba(0,255,136,0.15);
@@ -296,18 +299,16 @@
       letter-spacing: 0.05em;
       transition: all 0.2s ease;
     }
-    #start-btn:hover { background: var(--accent); color: #000; }
+    #expand-btn:hover { background: var(--accent); color: #000; }
+
+    #expand-btn .btn-icon {
+      width: 24px;
+      height: 24px;
+    }
   </style>
 </head>
 
 <body>
-
-<div id="rotate-overlay">
-  <div class="phone-icon"></div>
-  <h2>Device Rotation</h2>
-  <p>Press start to rotate your device to landscape for the best experience.</p>
-  <button id="start-btn">Start</button>
-</div>
 
 <header>
   <h1>Pandhal</h1>
@@ -322,14 +323,25 @@
   <button id="exit-fullscreen-btn">
     <img id="exit-icon" src="TemplateData/compress.png" alt="">
   </button>
-
+  
   <div id="loading">
     <div id="loading-text">Loading Assets...</div>
     <div class="bar">
       <div class="bar-fill" id="progress-bar"></div>
     </div>
   </div>
+
+  <div id="rotate-overlay">
+    <div class="phone-icon"></div>
+    <h2>Device Rotation</h2>
+    <p>Press start to rotate your device to landscape for the best experience.</p>
+    <button id="expand-btn">
+      <img src="TemplateData/expand.png" alt="" class="btn-icon">
+      Expand
+    </button>
+  </div>
 </div>
+
 
 <footer>
   Built by <a href="https://www.samosainteractive.com" target="_blank">Samosa Interactive</a>
@@ -343,7 +355,7 @@
   const exitFullscreenBtn = document.getElementById("exit-fullscreen-btn");
   const loadingElement = document.getElementById("loading");
   const rotateOverlay = document.getElementById("rotate-overlay");
-  const startBtn = document.getElementById("start-btn");
+  const startBtn = document.getElementById("expand-btn");
 
   let unityInstance = null;
 
@@ -412,6 +424,14 @@
   function hideOverlay() {
     rotateOverlay.style.display = "none";
   }
+  
+  function showFullscreenBtn() {
+    fullscreenBtn.style.display = "flex";
+  }
+
+  function hideFullscreenBtn() {
+    fullscreenBtn.style.display = "none";
+  }
 
   // --- MOBILE PORTRAIT DETECTION ---
   if (isMobile) {
@@ -422,8 +442,10 @@
       if (!(document.fullscreenElement || document.webkitFullscreenElement)) {
         if (e.matches) {
           showOverlay();
+          hideFullscreenBtn();
         } else {
           hideOverlay();
+          showFullscreenBtn();
         }
       }
     };
@@ -431,7 +453,10 @@
     portraitMQ.addEventListener("change", onOrientationChange);
 
     // Initial check on load
-    if (portraitMQ.matches) showOverlay();
+    if (portraitMQ.matches) {
+      showOverlay();
+      hideFullscreenBtn();
+    }
   }
 
   // --- START BUTTON ---
@@ -455,6 +480,7 @@
     }
 
     hideOverlay();
+    showFullscreenBtn();
   };
 
   // --- FULLSCREEN CHANGE HANDLER ---
@@ -470,6 +496,7 @@
       }
       if (window.matchMedia("(orientation: portrait)").matches) {
         showOverlay();
+        hideFullscreenBtn();
       }
     }
   };
